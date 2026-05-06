@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LedgerLite Accounting</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">LL</span>
+          <div>
+            <strong>LedgerLite</strong>
+            <small>Accounting MVP</small>
+          </div>
+        </div>
+        <nav class="nav" aria-label="Primary">
+          <button class="nav-item active" data-view="dashboard">Dashboard</button>
+          <button class="nav-item" data-view="company">Company</button>
+          <button class="nav-item" data-view="accounts">Chart of Accounts</button>
+          <button class="nav-item" data-view="journals">Journal Entries</button>
+          <button class="nav-item" data-view="banking">Banking</button>
+          <button class="nav-item" data-view="trial-balance">Trial Balance</button>
+          <button class="nav-item" data-view="profit-loss">Profit & Loss</button>
+          <button class="nav-item" data-view="balance-sheet">Balance Sheet</button>
+          <button class="nav-item" data-view="periods">Period Locking</button>
+          <button class="nav-item" data-view="audit">Audit Trail</button>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1 id="viewTitle">Dashboard</h1>
+            <p id="viewSubtitle">Accounting reports generated from posted double-entry journals.</p>
+          </div>
+          <div class="top-actions">
+            <button class="secondary" id="seedDataBtn" type="button">Reload Sample Data</button>
+            <button class="danger" id="resetBtn" type="button">Reset</button>
+          </div>
+        </header>
+
+        <section class="view active" id="dashboardView">
+          <div class="metrics">
+            <article class="metric">
+              <span>Net Profit</span>
+              <strong id="metricProfit">0.00</strong>
+            </article>
+            <article class="metric">
+              <span>Total Assets</span>
+              <strong id="metricAssets">0.00</strong>
+            </article>
+            <article class="metric">
+              <span>Trial Balance</span>
+              <strong id="metricTbStatus">Balanced</strong>
+            </article>
+            <article class="metric">
+              <span>Posted Journals</span>
+              <strong id="metricPosted">0</strong>
+            </article>
+          </div>
+          <div class="panel">
+            <div class="panel-heading">
+              <h2>Recent Journals</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Reference</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th class="num">Amount</th>
+                  </tr>
+                </thead>
+                <tbody id="recentJournalRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="companyView">
+          <form class="panel form-grid" id="companyForm">
+            <label>
+              Company Name
+              <input name="name" required />
+            </label>
+            <label>
+              Registration Number
+              <input name="registrationNumber" />
+            </label>
+            <label>
+              Base Currency
+              <input name="currency" maxlength="3" required />
+            </label>
+            <label>
+              Financial Year Start
+              <input type="date" name="fyStart" required />
+            </label>
+            <label>
+              Financial Year End
+              <input type="date" name="fyEnd" required />
+            </label>
+            <label>
+              Tax Registration Number
+              <input name="taxNumber" />
+            </label>
+            <div class="form-actions">
+              <button type="submit">Save Company</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="view" id="accountsView">
+          <div class="two-col">
+            <form class="panel stacked" id="accountForm">
+              <input type="hidden" name="id" />
+              <h2 id="accountFormTitle">New Account</h2>
+              <label>Account Code <input name="code" required /></label>
+              <label>Account Name <input name="name" required /></label>
+              <label>
+                Type
+                <select name="type" required></select>
+              </label>
+              <label>
+                Category
+                <select name="category" required></select>
+              </label>
+              <label>
+                Parent Account
+                <select name="parentId"></select>
+              </label>
+              <label>Opening Debit <input type="number" step="0.01" min="0" name="openingDebit" value="0" /></label>
+              <label>Opening Credit <input type="number" step="0.01" min="0" name="openingCredit" value="0" /></label>
+              <label class="check"><input type="checkbox" name="active" checked /> Active</label>
+              <div class="form-actions split">
+                <button type="submit">Save Account</button>
+                <button class="secondary" id="clearAccountBtn" type="button">Clear</button>
+              </div>
+            </form>
+            <div class="panel">
+              <div class="panel-heading">
+                <h2>Accounts</h2>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Category</th>
+                      <th>Status</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="accountRows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="journalsView">
+          <div class="panel stacked">
+            <div class="panel-heading">
+              <h2>Journal Entry</h2>
+              <span id="journalBalanceHint">Debits and credits must balance before posting.</span>
+            </div>
+            <form id="journalForm" class="stacked">
+              <input type="hidden" name="id" />
+              <div class="form-grid compact">
+                <label>Date <input type="date" name="date" required /></label>
+                <label>Reference <input name="reference" placeholder="Auto if blank" /></label>
+                <label class="wide">Description <input name="description" required /></label>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Account</th>
+                      <th>Description</th>
+                      <th class="num">Debit</th>
+                      <th class="num">Credit</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="journalLineRows"></tbody>
+                  <tfoot>
+                    <tr>
+                      <th colspan="2">Totals</th>
+                      <th class="num" id="journalDebitTotal">0.00</th>
+                      <th class="num" id="journalCreditTotal">0.00</th>
+                      <th></th>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <div class="form-actions split">
+                <div>
+                  <button class="secondary" id="addLineBtn" type="button">Add Line</button>
+                  <button class="secondary" id="clearJournalBtn" type="button">Clear</button>
+                </div>
+                <div>
+                  <button class="secondary" data-save-status="draft" type="submit">Save Draft</button>
+                  <button data-save-status="posted" type="submit">Post Journal</button>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="panel">
+            <div class="panel-heading">
+              <h2>Journals</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Reference</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th class="num">Debit</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="journalRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="bankingView">
+          <div class="panel stacked">
+            <div class="panel-heading">
+              <h2>Upload Bank Statement</h2>
+              <span>CSV files are parsed immediately. Excel and PDF files are stored for review in this static MVP.</span>
+            </div>
+            <form id="bankUploadForm" class="form-grid compact">
+              <label>
+                Singapore Bank
+                <select name="bankName" required></select>
+              </label>
+              <label>
+                Ledger Bank Account
+                <select name="bankAccountId" required></select>
+              </label>
+              <label>
+                Statement File
+                <input type="file" name="statementFile" accept=".csv,.txt,.tsv,.xlsx,.xls,.pdf" required />
+              </label>
+              <div class="form-actions">
+                <button type="submit">Upload Statement</button>
+                <button class="secondary" id="downloadSampleBankCsvBtn" type="button">Sample CSV</button>
+              </div>
+            </form>
+          </div>
+          <div class="panel">
+            <div class="panel-heading">
+              <h2>Uploaded Statements</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>File</th>
+                    <th>Bank</th>
+                    <th>Type</th>
+                    <th>Uploaded</th>
+                    <th>Status</th>
+                    <th class="num">Rows</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="statementRows"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-heading">
+              <h2>Bank Transactions</h2>
+              <div class="panel-actions">
+                <span>Review the suggested category and account code, approve, then create the journal.</span>
+                <button id="massApproveBankBtn" type="button">Mass Approve & Post</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th class="num">Amount</th>
+                    <th>Suggested Category</th>
+                    <th>Suggested Account</th>
+                    <th>Other Account</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="bankTransactionRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="trialBalanceView">
+          <div class="panel">
+            <div class="report-toolbar">
+              <label>As At <input type="date" id="tbAsAt" /></label>
+              <label class="check"><input type="checkbox" id="tbShowZero" /> Show zero balances</label>
+              <button class="secondary" data-export="trial-balance">Export CSV</button>
+            </div>
+            <div id="trialBalanceReport"></div>
+          </div>
+        </section>
+
+        <section class="view" id="profitLossView">
+          <div class="panel">
+            <div class="report-toolbar">
+              <label>From <input type="date" id="plFrom" /></label>
+              <label>To <input type="date" id="plTo" /></label>
+              <button class="secondary" data-export="profit-loss">Export CSV</button>
+            </div>
+            <div id="profitLossReport"></div>
+          </div>
+        </section>
+
+        <section class="view" id="balanceSheetView">
+          <div class="panel">
+            <div class="report-toolbar">
+              <label>As At <input type="date" id="bsAsAt" /></label>
+              <button class="secondary" data-export="balance-sheet">Export CSV</button>
+            </div>
+            <div id="balanceSheetReport"></div>
+          </div>
+        </section>
+
+        <section class="view" id="periodsView">
+          <div class="panel">
+            <div class="panel-heading">
+              <h2>Accounting Periods</h2>
+              <button id="generatePeriodsBtn" class="secondary" type="button">Generate Monthly Periods</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Period</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="periodRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="auditView">
+          <div class="panel">
+            <div class="panel-heading">
+              <h2>Audit Trail</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date/Time</th>
+                    <th>Action</th>
+                    <th>Entity</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody id="auditRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <template id="journalLineTemplate">
+      <tr>
+        <td><select class="line-account" required></select></td>
+        <td><input class="line-description" /></td>
+        <td><input class="line-debit num-input" type="number" min="0" step="0.01" value="0" /></td>
+        <td><input class="line-credit num-input" type="number" min="0" step="0.01" value="0" /></td>
+        <td><button class="icon remove-line" type="button" title="Remove line">x</button></td>
+      </tr>
+    </template>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
