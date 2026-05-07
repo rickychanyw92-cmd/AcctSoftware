@@ -22,6 +22,17 @@ A self-contained browser accounting app for a small-company reporting workflow.
 - Local browser persistence using `localStorage`
 - Sample data included on first load
 
+## Agent Workflow
+
+The planned multi-agent workflow is documented in [AGENTS.md](AGENTS.md). It defines:
+
+- Main Accounting Manager Agent
+- Document Extraction Agent
+- Account Classification Agent
+- Review & Reporting Agent
+
+The key control rule is that extracted and classified transactions require accountant approval before they are posted into the ledger and used in management accounts.
+
 ## Run
 
 Open `index.html` in a browser.
