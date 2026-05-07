@@ -46,6 +46,17 @@ const SINGAPORE_BANKS = [
   "MUFG Bank Singapore"
 ];
 
+const GST_TREATMENTS = {
+  sales_standard: { label: "Standard Rated Supplies (9%) GST", rate: 0.09 },
+  sales_zero: { label: "Zero Rated Supplies (0%)", rate: 0 },
+  sales_out_of_scope: { label: "Out of scope (0%)", rate: 0 },
+  sales_no_tax: { label: "No Tax (0%)", rate: 0 },
+  purchase_standard: { label: "Standard Rated Purchases (9%) GST", rate: 0.09 },
+  purchase_zero: { label: "Zero Rated Purchases (0%)", rate: 0 },
+  purchase_out_of_scope: { label: "Out of scope (0%)", rate: 0 },
+  purchase_no_tax: { label: "No Tax (0%)", rate: 0 }
+};
+
 let state = loadState();
 let activeView = "dashboard";
 let pendingJournalStatus = "draft";
@@ -223,7 +234,9 @@ function showView(view) {
     "profit-loss": ["Profit & Loss", "Income and expenses for the selected period."],
     "balance-sheet": ["Balance Sheet", "Assets, liabilities, and equity as at a selected date."],
     periods: ["Period Locking", "Lock closed months to protect posted results."],
-    audit: ["Audit Trail", "Trace important changes and control actions."]
+    audit: ["Audit Trail", "Trace important changes and control actions."],
+    "sales-invoice": ["Sales Invoice", "Create customer invoices with GST treatment and post them to the ledger."],
+    "supplier-bill": ["Supplier Bill", "Create supplier bills with GST treatment and post them to the ledger."]
   };
   $("#viewTitle").textContent = titles[view][0];
   $("#viewSubtitle").textContent = titles[view][1];
@@ -565,12 +578,17 @@ function postSalesInvoice(data) {
   const amount = toAmount(data.amount);
   if (amount <= 0) return alert("Sales invoice amount must be greater than zero.");
   if (isDateLocked(data.date)) return alert("This accounting period is locked.");
+  const gst = calculateGst(data.gstTreatment, amount);
+  const gstAccount = gst.amount ? getGstAccount() : null;
+  if (gst.amount && !gstAccount) return alert("Create a GST Payable account before posting standard-rated invoices.");
   const reference = data.reference.trim() || nextInvoiceReference("SI");
-  const description = `Sales invoice: ${data.customer.trim()}`;
-  state.journals.push(journal(data.date, reference, description, "posted", [
-    line(data.receivableAccountId, description, amount, 0),
+  const description = `Sales invoice: ${data.customer.trim()} (${gst.label})`;
+  const lines = [
+    line(data.receivableAccountId, description, gst.total, 0),
     line(data.incomeAccountId, description, 0, amount)
-  ]));
+  ];
+  if (gst.amount) lines.push(line(gstAccount.id, description, 0, gst.amount));
+  state.journals.push(journal(data.date, reference, description, "posted", lines));
   addAudit("posted", "sales invoice", `${reference} ${description}`);
   saveState();
   renderAll();
@@ -578,17 +596,37 @@ function postSalesInvoice(data) {
 
 function postSupplierInvoice(data) {
   const amount = toAmount(data.amount);
-  if (amount <= 0) return alert("Supplier invoice amount must be greater than zero.");
+  if (amount <= 0) return alert("Supplier bill amount must be greater than zero.");
   if (isDateLocked(data.date)) return alert("This accounting period is locked.");
+  const gst = calculateGst(data.gstTreatment, amount);
+  const gstAccount = gst.amount ? getGstAccount() : null;
+  if (gst.amount && !gstAccount) return alert("Create a GST Payable account before posting standard-rated bills.");
   const reference = data.reference.trim() || nextInvoiceReference("PI");
-  const description = `Supplier invoice: ${data.supplier.trim()}`;
-  state.journals.push(journal(data.date, reference, description, "posted", [
+  const description = `Supplier bill: ${data.supplier.trim()} (${gst.label})`;
+  const lines = [
     line(data.expenseAccountId, description, amount, 0),
-    line(data.payableAccountId, description, 0, amount)
-  ]));
-  addAudit("posted", "supplier invoice", `${reference} ${description}`);
+    line(data.payableAccountId, description, 0, gst.total)
+  ];
+  if (gst.amount) lines.splice(1, 0, line(gstAccount.id, description, gst.amount, 0));
+  state.journals.push(journal(data.date, reference, description, "posted", lines));
+  addAudit("posted", "supplier bill", `${reference} ${description}`);
   saveState();
   renderAll();
+}
+
+function calculateGst(treatment, baseAmount) {
+  const rule = GST_TREATMENTS[treatment] || { label: "No Tax (0%)", rate: 0 };
+  const gstAmount = toAmount(baseAmount * rule.rate);
+  return {
+    label: rule.label,
+    rate: rule.rate,
+    amount: gstAmount,
+    total: toAmount(baseAmount + gstAmount)
+  };
+}
+
+function getGstAccount() {
+  return state.accounts.find((item) => item.active && item.name.toLowerCase().includes("gst"));
 }
 
 function renderJournals() {

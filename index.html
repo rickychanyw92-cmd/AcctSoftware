@@ -27,6 +27,8 @@
           <button class="nav-item" data-view="balance-sheet">Balance Sheet</button>
           <button class="nav-item" data-view="periods">Period Locking</button>
           <button class="nav-item" data-view="audit">Audit Trail</button>
+          <button class="nav-item" data-view="sales-invoice">Sales Invoice</button>
+          <button class="nav-item" data-view="supplier-bill">Supplier Bill</button>
         </nav>
       </aside>
 
@@ -79,48 +81,6 @@
                 <tbody id="recentJournalRows"></tbody>
               </table>
             </div>
-          </div>
-          <div class="two-col">
-            <form class="panel stacked" id="salesInvoiceForm">
-              <h2>New Sales Invoice</h2>
-              <div class="form-grid compact">
-                <label>Date <input type="date" name="date" required /></label>
-                <label>Invoice No. <input name="reference" placeholder="Auto if blank" /></label>
-                <label class="wide">Customer <input name="customer" required /></label>
-                <label>Amount <input type="number" step="0.01" min="0" name="amount" required /></label>
-                <label>
-                  Revenue Account
-                  <select name="incomeAccountId" required></select>
-                </label>
-                <label>
-                  Receivable Account
-                  <select name="receivableAccountId" required></select>
-                </label>
-              </div>
-              <div class="form-actions">
-                <button type="submit">Post Sales Invoice</button>
-              </div>
-            </form>
-            <form class="panel stacked" id="supplierInvoiceForm">
-              <h2>New Supplier Invoice</h2>
-              <div class="form-grid compact">
-                <label>Date <input type="date" name="date" required /></label>
-                <label>Bill No. <input name="reference" placeholder="Auto if blank" /></label>
-                <label class="wide">Supplier <input name="supplier" required /></label>
-                <label>Amount <input type="number" step="0.01" min="0" name="amount" required /></label>
-                <label>
-                  Expense / Asset Account
-                  <select name="expenseAccountId" required></select>
-                </label>
-                <label>
-                  Payable Account
-                  <select name="payableAccountId" required></select>
-                </label>
-              </div>
-              <div class="form-actions">
-                <button type="submit">Post Supplier Invoice</button>
-              </div>
-            </form>
           </div>
         </section>
 
@@ -423,6 +383,70 @@
               </table>
             </div>
           </div>
+        </section>
+
+        <section class="view" id="salesInvoiceView">
+          <form class="panel stacked" id="salesInvoiceForm">
+            <h2>New Sales Invoice</h2>
+            <div class="form-grid">
+              <label>Date <input type="date" name="date" required /></label>
+              <label>Invoice No. <input name="reference" placeholder="Auto if blank" /></label>
+              <label>Amount Before GST <input type="number" step="0.01" min="0" name="amount" required /></label>
+              <label class="wide">Customer <input name="customer" required /></label>
+              <label>
+                GST Treatment
+                <select name="gstTreatment" required>
+                  <option value="sales_standard">Standard Rated Supplies (9%) GST</option>
+                  <option value="sales_zero">Zero Rated Supplies (0%)</option>
+                  <option value="sales_out_of_scope">Out of scope (0%)</option>
+                  <option value="sales_no_tax">No Tax (0%)</option>
+                </select>
+              </label>
+              <label>
+                Revenue Account
+                <select name="incomeAccountId" required></select>
+              </label>
+              <label>
+                Receivable Account
+                <select name="receivableAccountId" required></select>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit">Post Sales Invoice</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="view" id="supplierBillView">
+          <form class="panel stacked" id="supplierInvoiceForm">
+            <h2>New Supplier Bill</h2>
+            <div class="form-grid">
+              <label>Date <input type="date" name="date" required /></label>
+              <label>Bill No. <input name="reference" placeholder="Auto if blank" /></label>
+              <label>Amount Before GST <input type="number" step="0.01" min="0" name="amount" required /></label>
+              <label class="wide">Supplier <input name="supplier" required /></label>
+              <label>
+                GST Treatment
+                <select name="gstTreatment" required>
+                  <option value="purchase_standard">Standard Rated Purchases (9%) GST</option>
+                  <option value="purchase_zero">Zero Rated Purchases (0%)</option>
+                  <option value="purchase_out_of_scope">Out of scope (0%)</option>
+                  <option value="purchase_no_tax">No Tax (0%)</option>
+                </select>
+              </label>
+              <label>
+                Expense / Asset Account
+                <select name="expenseAccountId" required></select>
+              </label>
+              <label>
+                Payable Account
+                <select name="payableAccountId" required></select>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit">Post Supplier Bill</button>
+            </div>
+          </form>
         </section>
       </main>
     </div>

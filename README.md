@@ -8,6 +8,8 @@ A self-contained browser accounting app for a small-company reporting workflow.
 - Chart of accounts with account type, category, normal balance, opening balances, and active status
 - Double-entry journal entry form with draft, post, and void status
 - Dashboard entry for sales invoices and supplier invoices
+- Dedicated Sales Invoice and Supplier Bill entry screens
+- GST treatment selection for sales and supplier bill posting
 - Bank statement upload workflow for CSV, Excel, and PDF files
 - Singapore bank dropdown for identifying uploaded statements
 - CSV, Excel, and text-based PDF bank statement parsing with suggested account categories and account codes
@@ -34,6 +36,12 @@ The planned multi-agent workflow is documented in [AGENTS.md](AGENTS.md). It def
 - Review & Reporting Agent
 
 The key control rule is that extracted and classified transactions require accountant approval before they are posted into the ledger and used in management accounts.
+
+Sub-agent starter folders are under `Main agent/`:
+
+- `Document Extraction Agent/`
+- `Account Classification Agent/`
+- `Review & Reporting Agent/`
 
 ## Run
 
