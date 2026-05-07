@@ -80,6 +80,48 @@
               </table>
             </div>
           </div>
+          <div class="two-col">
+            <form class="panel stacked" id="salesInvoiceForm">
+              <h2>New Sales Invoice</h2>
+              <div class="form-grid compact">
+                <label>Date <input type="date" name="date" required /></label>
+                <label>Invoice No. <input name="reference" placeholder="Auto if blank" /></label>
+                <label class="wide">Customer <input name="customer" required /></label>
+                <label>Amount <input type="number" step="0.01" min="0" name="amount" required /></label>
+                <label>
+                  Revenue Account
+                  <select name="incomeAccountId" required></select>
+                </label>
+                <label>
+                  Receivable Account
+                  <select name="receivableAccountId" required></select>
+                </label>
+              </div>
+              <div class="form-actions">
+                <button type="submit">Post Sales Invoice</button>
+              </div>
+            </form>
+            <form class="panel stacked" id="supplierInvoiceForm">
+              <h2>New Supplier Invoice</h2>
+              <div class="form-grid compact">
+                <label>Date <input type="date" name="date" required /></label>
+                <label>Bill No. <input name="reference" placeholder="Auto if blank" /></label>
+                <label class="wide">Supplier <input name="supplier" required /></label>
+                <label>Amount <input type="number" step="0.01" min="0" name="amount" required /></label>
+                <label>
+                  Expense / Asset Account
+                  <select name="expenseAccountId" required></select>
+                </label>
+                <label>
+                  Payable Account
+                  <select name="payableAccountId" required></select>
+                </label>
+              </div>
+              <div class="form-actions">
+                <button type="submit">Post Supplier Invoice</button>
+              </div>
+            </form>
+          </div>
         </section>
 
         <section class="view" id="companyView">

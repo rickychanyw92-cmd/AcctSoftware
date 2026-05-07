@@ -7,10 +7,12 @@ A self-contained browser accounting app for a small-company reporting workflow.
 - Company profile and financial year setup
 - Chart of accounts with account type, category, normal balance, opening balances, and active status
 - Double-entry journal entry form with draft, post, and void status
+- Dashboard entry for sales invoices and supplier invoices
 - Bank statement upload workflow for CSV, Excel, and PDF files
 - Singapore bank dropdown for identifying uploaded statements
 - CSV, Excel, and text-based PDF bank statement parsing with suggested account categories and account codes
 - Accountant approval before imported bank transactions become journals
+- Create a new chart of account directly from bank transaction review
 - Delete uploaded bank statements and remove their imported rows
 - Mass approve and post reviewed bank transactions
 - Period locking for monthly accounting periods
@@ -55,6 +57,8 @@ CSV, TXT, TSV, Excel, and text-based PDF statements are parsed in the browser. C
 Uploads require selecting the Singapore bank that issued the statement and the ledger bank account that should be debited or credited when approved transactions are posted.
 
 Each imported transaction appears in the Bank Transactions table with a suggested account category and account code based on its description and money-in/money-out direction. The accountant can change the account code, then use `Approve & Post` to create the posted journal. Only approved bank transactions flow into the ledger and management accounts.
+
+The `Other Account` selector in the Bank Transactions table includes `+ Create new account`, allowing the accountant to add a missing chart of account while reviewing bank classifications.
 
 For Excel and CSV uploads, the transaction description combines all available narrative fields such as description, transaction details, remarks, particulars, reference, payee, and payer. If a bank file uses unnamed detail columns, the parser also includes non-date and non-amount text cells so the accountant has enough detail to reclassify the suggested account code manually.
 

@@ -194,6 +194,7 @@ function init() {
   bindCompanyForm();
   bindAccountForm();
   bindJournalForm();
+  bindInvoiceForms();
   bindBanking();
   bindReports();
   bindMaintenance();
@@ -302,6 +303,21 @@ function bindJournalForm() {
   clearJournalForm();
 }
 
+function bindInvoiceForms() {
+  $("#salesInvoiceForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    postSalesInvoice(Object.fromEntries(new FormData(event.currentTarget)));
+    event.currentTarget.reset();
+    setInvoiceFormDefaults();
+  });
+  $("#supplierInvoiceForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    postSupplierInvoice(Object.fromEntries(new FormData(event.currentTarget)));
+    event.currentTarget.reset();
+    setInvoiceFormDefaults();
+  });
+}
+
 function bindBanking() {
   $("#downloadSampleBankCsvBtn").addEventListener("click", downloadSampleBankCsv);
   $("#massApproveBankBtn").addEventListener("click", massApproveBankTransactions);
@@ -386,6 +402,7 @@ function renderAll() {
   renderAudit();
   renderReports();
   renderDashboard();
+  renderInvoiceForms();
 }
 
 function renderCompanyForm() {
@@ -537,6 +554,41 @@ function saveJournal(status) {
 function nextJournalReference() {
   const count = state.journals.length + 1;
   return `JE-${String(count).padStart(4, "0")}`;
+}
+
+function nextInvoiceReference(prefix) {
+  const count = state.journals.filter((item) => item.reference.startsWith(`${prefix}-`)).length + 1;
+  return `${prefix}-${String(count).padStart(4, "0")}`;
+}
+
+function postSalesInvoice(data) {
+  const amount = toAmount(data.amount);
+  if (amount <= 0) return alert("Sales invoice amount must be greater than zero.");
+  if (isDateLocked(data.date)) return alert("This accounting period is locked.");
+  const reference = data.reference.trim() || nextInvoiceReference("SI");
+  const description = `Sales invoice: ${data.customer.trim()}`;
+  state.journals.push(journal(data.date, reference, description, "posted", [
+    line(data.receivableAccountId, description, amount, 0),
+    line(data.incomeAccountId, description, 0, amount)
+  ]));
+  addAudit("posted", "sales invoice", `${reference} ${description}`);
+  saveState();
+  renderAll();
+}
+
+function postSupplierInvoice(data) {
+  const amount = toAmount(data.amount);
+  if (amount <= 0) return alert("Supplier invoice amount must be greater than zero.");
+  if (isDateLocked(data.date)) return alert("This accounting period is locked.");
+  const reference = data.reference.trim() || nextInvoiceReference("PI");
+  const description = `Supplier invoice: ${data.supplier.trim()}`;
+  state.journals.push(journal(data.date, reference, description, "posted", [
+    line(data.expenseAccountId, description, amount, 0),
+    line(data.payableAccountId, description, 0, amount)
+  ]));
+  addAudit("posted", "supplier invoice", `${reference} ${description}`);
+  saveState();
+  renderAll();
 }
 
 function renderJournals() {
@@ -953,7 +1005,7 @@ function renderBankTransactions() {
           <td class="num">${money(transaction.amount)}</td>
           <td>${escapeHtml(transaction.suggestedCategory || "Needs review")}</td>
           <td>${suggestedAccount ? `${escapeHtml(suggestedAccount.code)} ${escapeHtml(suggestedAccount.name)}` : "No suggestion"}</td>
-          <td><select ${disabled} onchange="setBankOffsetAccount('${transaction.id}', this.value)"><option value="">Select account</option>${accountOptions}</select></td>
+          <td><select ${disabled} onchange="setBankOffsetAccount('${transaction.id}', this.value)"><option value="">Select account</option>${accountOptions}<option value="__new__">+ Create new account</option></select></td>
           <td><span class="status ${transaction.status}">${transaction.status}</span></td>
           <td>${action}</td>
         </tr>
@@ -975,6 +1027,14 @@ function ensureBankSuggestion(transaction) {
 function setBankOffsetAccount(id, accountId) {
   const transaction = state.bankTransactions.find((item) => item.id === id);
   if (!transaction) return;
+  if (accountId === "__new__") {
+    const created = createAccountFromBankTransaction(transaction);
+    if (!created) {
+      renderBankTransactions();
+      return;
+    }
+    accountId = created.id;
+  }
   transaction.offsetAccountId = accountId;
   if (transaction.status === "approved") {
     transaction.status = "review";
@@ -982,6 +1042,45 @@ function setBankOffsetAccount(id, accountId) {
   }
   saveState();
   renderBankTransactions();
+}
+
+function createAccountFromBankTransaction(transaction) {
+  const code = prompt("New account code");
+  if (!code) return null;
+  if (state.accounts.some((item) => item.code === code.trim())) {
+    alert("Account code already exists.");
+    return null;
+  }
+  const name = prompt("New account name");
+  if (!name) return null;
+  const type = prompt(`Account type (${Object.keys(ACCOUNT_TYPES).join(", ")})`, transaction.amount > 0 ? "Income" : "Expense");
+  if (!type || !ACCOUNT_TYPES[type]) {
+    alert("Invalid account type.");
+    return null;
+  }
+  const defaultCategory = ACCOUNT_TYPES[type][0];
+  const category = prompt(`Account category (${ACCOUNT_TYPES[type].join(", ")})`, defaultCategory);
+  if (!category || !ACCOUNT_TYPES[type].includes(category)) {
+    alert("Invalid account category.");
+    return null;
+  }
+  const saved = {
+    id: uid("acct"),
+    code: code.trim(),
+    name: name.trim(),
+    type,
+    category,
+    parentId: "",
+    normalBalance: NORMAL_BALANCE[type],
+    openingDebit: 0,
+    openingCredit: 0,
+    active: true
+  };
+  state.accounts.push(saved);
+  addAudit("created", "account", `${saved.code} ${saved.name} created from bank transaction review.`);
+  saveState();
+  renderAll();
+  return saved;
 }
 
 function approveBankTransaction(id) {
@@ -1215,6 +1314,35 @@ function renderDashboard() {
       <td class="num">${money(item.lines.reduce((sum, lineItem) => sum + lineItem.debit, 0))}</td>
     </tr>
   `).join("");
+}
+
+function renderInvoiceForms() {
+  fillDashboardAccountSelect("#salesInvoiceForm select[name='incomeAccountId']", (item) => ["Income", "Other Income"].includes(item.type));
+  fillDashboardAccountSelect("#salesInvoiceForm select[name='receivableAccountId']", (item) => item.type === "Asset");
+  fillDashboardAccountSelect("#supplierInvoiceForm select[name='expenseAccountId']", (item) => ["Expense", "Cost of Sales", "Asset", "Tax"].includes(item.type));
+  fillDashboardAccountSelect("#supplierInvoiceForm select[name='payableAccountId']", (item) => item.type === "Liability");
+  setInvoiceFormDefaults(false);
+}
+
+function fillDashboardAccountSelect(selector, filter) {
+  const select = $(selector);
+  if (!select) return;
+  const selected = select.value;
+  select.innerHTML = state.accounts
+    .filter((item) => item.active && filter(item))
+    .sort((a, b) => a.code.localeCompare(b.code))
+    .map((item) => `<option value="${item.id}">${escapeHtml(item.code)} ${escapeHtml(item.name)}</option>`)
+    .join("");
+  if ([...select.options].some((option) => option.value === selected)) select.value = selected;
+}
+
+function setInvoiceFormDefaults(force = true) {
+  ["#salesInvoiceForm", "#supplierInvoiceForm"].forEach((selector) => {
+    const form = $(selector);
+    if (!form) return;
+    const dateInput = form.elements.date;
+    if (dateInput && (force || !dateInput.value)) dateInput.value = today();
+  });
 }
 
 function generateMonthlyPeriods(start, end) {
